@@ -1,46 +1,64 @@
-#include <M5StickCPlus2.h>
+/*
+ * SPDX-FileCopyrightText: 2025 M5Stack
+ * SPDX-License-Identifier: MIT
+ */
+
+#include "M5StickCPlus2.h"
+
+void showText(const char* text) {
+    StickCP2.Display.clear();
+    StickCP2.Display.drawString(text,
+                                StickCP2.Display.width() / 2,
+                                StickCP2.Display.height() / 2);
+}
+
+void beep() {
+    StickCP2.Speaker.tone(8000, 40);
+}
 
 void setup() {
-    Serial.begin(115200);
-    delay(500);
+    auto cfg = M5.config();
+    StickCP2.begin(cfg);
 
-    // Init device
-    StickCP2.begin();
+    StickCP2.Display.setRotation(1);
+    StickCP2.Display.setTextColor(GREEN);
+    StickCP2.Display.setTextDatum(middle_center);
+    StickCP2.Display.setTextFont(&fonts::Orbitron_Light_24);
+    StickCP2.Display.setTextSize(1);
 
-    StickCP2.Display.setRotation(3);
-    StickCP2.Display.setTextSize(2);
-    StickCP2.Display.setCursor(0, 0);
-    StickCP2.Display.println("IMU TEST");
-    StickCP2.Display.println("Init IMU...");
-    
-    if (!StickCP2.Imu.begin()) {
-        Serial.println("IMU init FAILED!");
-        StickCP2.Display.println("IMU FAILED!");
-        while (1) delay(100);
-    }
-
-    StickCP2.Display.println("IMU OK!");
-    Serial.println("IMU initialized.");
+    showText("Button Test");
 }
 
 void loop() {
-    float ax, ay, az;
-    float gx, gy, gz;
+    StickCP2.update();
 
-    StickCP2.update();  // required by M5Unified
+    // ----- BTN A -----
+    if (StickCP2.BtnA.wasPressed()) {
+        beep();
+        showText("A Pressed");
+    }
+    if (StickCP2.BtnA.wasReleased()) {
+        beep();
+        showText("A Released");
+    }
 
-    // Read IMU
-    StickCP2.Imu.getAccel(&ax, &ay, &az);
-    StickCP2.Imu.getGyro(&gx, &gy, &gz);
+    // ----- BTN B -----
+    if (StickCP2.BtnB.wasPressed()) {
+        beep();
+        showText("B Pressed");
+    }
+    if (StickCP2.BtnB.wasReleased()) {
+        beep();
+        showText("B Released");
+    }
 
-    // Print to serial
-    Serial.printf("ACC: %.2f %.2f %.2f  |  GYRO: %.2f %.2f %.2f\n",
-                  ax, ay, az, gx, gy, gz);
-
-    // Print to screen
-    StickCP2.Display.setCursor(0, 40);
-    StickCP2.Display.printf("AX: %6.2f\nAY: %6.2f\nAZ: %6.2f\n", ax, ay, az);
-    StickCP2.Display.printf("GX: %6.2f\nGY: %6.2f\nGZ: %6.2f\n", gx, gy, gz);
-
-    delay(100);
+    // ----- PWR BUTTON -----
+    if (StickCP2.BtnPWR.wasClicked()) {
+        beep();
+        showText("PWR Click");
+    }
+    if (StickCP2.BtnPWR.wasHold()) {
+        beep();
+        showText("PWR Hold");
+    }
 }
