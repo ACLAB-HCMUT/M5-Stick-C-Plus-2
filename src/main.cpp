@@ -1,10 +1,9 @@
 #include <M5StickCPlus2.h>
 #include <esp_sleep.h>
 
-#define MOTION_THRESHOLD 0.750f   // adjust sensitivity (G units)
-#define WAKE_DISPLAY_TIME 5000   // 5 seconds
-
-bool woke_from_sleep = false;
+#define MOTION_THRESHOLD 0.5f   // G units, tăng để nghiêng nhẹ không wakeup
+#define WAKE_DISPLAY_TIME 5000   // 5 giây hiển thị pin
+#define SAMPLE_DELAY 75          // 20 ms giữa các sample
 
 void showBattery() {
     StickCP2.Display.clear();
@@ -20,10 +19,10 @@ void goToSleep() {
     Serial.println("Going to IMU motion sleep...");
 
     StickCP2.Display.clear();
-    StickCP2.Display.sleep();   // turn off LCD
+    StickCP2.Display.sleep(); // tắt LCD
 
-    // Light sleep (CPU pauses but IMU stays running)
-    esp_sleep_enable_timer_wakeup(20000);   // wake every 20 ms to sample IMU
+    // Light sleep với timer wakeup 20 ms
+    esp_sleep_enable_timer_wakeup(SAMPLE_DELAY * 1000); // microseconds
     esp_light_sleep_start();
 }
 
@@ -54,36 +53,42 @@ void setup() {
     Serial.println("System Ready. Sleeping...");
     delay(300);
 
-    goToSleep();   // enter first sleep
+    goToSleep(); // enter first sleep
 }
 
 void loop() {
     StickCP2.update();
 
-    // Read IMU to detect motion after periodic light sleep wakeups
+    // đọc gia tốc
     float ax, ay, az;
     StickCP2.Imu.getAccel(&ax, &ay, &az);
 
-    float magnitude = fabs(ax) + fabs(ay) + fabs(az - 1.0f); // remove gravity
+    // loại bỏ trọng lực trục Z
+    float axg = ax;
+    float ayg = ay;
+    float azg = az - 1.0f;
+
+    // magnitude chuẩn
+    float magnitude = sqrt(axg*axg + ayg*ayg + azg*azg);
 
     if (magnitude > MOTION_THRESHOLD) {
         Serial.println("Motion detected! Waking...");
 
-        // Turn display ON
+        // Bật LCD
         StickCP2.Display.wakeup();
         StickCP2.Display.setCursor(0, 0);
 
-        // Show battery for 5 seconds
+        // Show battery trong 5 giây
         unsigned long t0 = millis();
         while (millis() - t0 < WAKE_DISPLAY_TIME) {
             showBattery();
             delay(300);
         }
 
-        // go back to sleep
+        // Quay lại sleep
+        goToSleep();
+    } else {
+        // Không đủ chuyển động → tiếp tục sleep
         goToSleep();
     }
-
-    // Not enough movement → go back to sleep again
-    goToSleep();
 }
