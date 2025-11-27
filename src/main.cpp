@@ -1,7 +1,7 @@
 #include <M5StickCPlus2.h>
 #include <esp_sleep.h>
 
-#define MOTION_THRESHOLD 0.20f   // adjust sensitivity (G units)
+#define MOTION_THRESHOLD 0.750f   // adjust sensitivity (G units)
 #define WAKE_DISPLAY_TIME 5000   // 5 seconds
 
 bool woke_from_sleep = false;
